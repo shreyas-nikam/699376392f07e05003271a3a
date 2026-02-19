@@ -6,7 +6,8 @@ import seaborn as sns
 from xgboost import XGBClassifier
 from source import *
 
-st.set_page_config(page_title="QuLab: Lab 41: Mitigating Bias via Reweighting", layout="wide")
+st.set_page_config(
+    page_title="QuLab: Lab 41: Mitigating Bias via Reweighting", layout="wide")
 st.sidebar.image("https://www.quantuniversity.com/assets/img/logo5.jpg")
 st.sidebar.divider()
 st.title("QuLab: Lab 41: Mitigating Bias via Reweighting")
@@ -85,13 +86,13 @@ with st.sidebar:
         "7. Comprehensive Comparison & Recommendation",
         "8. Compliance Report"
     ]
-    
+
     # Handle navigation index safety
     try:
         idx = pages.index(st.session_state.current_page)
     except ValueError:
         idx = 0
-        
+
     st.session_state.current_page = st.selectbox("Go to", pages, index=idx)
 
 # --- Page Logic ---
@@ -99,8 +100,10 @@ with st.sidebar:
 if st.session_state.current_page == 'Home':
     st.header("🛡️ Apex Credit Solutions: Bias Mitigation Dashboard")
     st.markdown(f"")
-    st.markdown(f"**Persona:** Sri Krishnamurthy, CFA, Senior Risk Analyst at Apex Credit Solutions.")
-    st.markdown(f"**Organization:** Apex Credit Solutions, a leading financial institution providing consumer credit.")
+    st.markdown(
+        f"**Persona:** Sri Krishnamurthy, CFA, Senior Risk Analyst at Apex Credit Solutions.")
+    st.markdown(
+        f"**Organization:** Apex Credit Solutions, a leading financial institution providing consumer credit.")
     st.markdown(f"")
     st.markdown(f"As a CFA charterholder, my primary responsibility at Apex Credit Solutions is to ensure the integrity and fairness of our credit scoring models. Recent internal audits, stemming from our D4-T2-C1 bias detection lab, have revealed a concerning issue: our existing credit model exhibits disparate impact, with **\"Group B\" receiving significantly lower loan approval rates compared to \"Group A,\" despite similar financial profiles.** This not only raises ethical concerns but also exposes Apex Credit Solutions to significant regulatory and reputational risks under acts like the Equal Credit Opportunity Act (ECOA).")
     st.markdown(f"")
@@ -144,7 +147,8 @@ elif st.session_state.current_page == '1. Setup & Data Generation':
         st.success("Dataset generated successfully!")
 
     if st.session_state.initialized:
-        st.markdown(f"Dataset generated with `{len(st.session_state.X_train)}` training samples and `{len(st.session_state.X_test)}` test samples.")
+        st.markdown(
+            f"Dataset generated with `{len(st.session_state.X_train)}` training samples and `{len(st.session_state.X_test)}` test samples.")
         st.markdown(f"Features: `{st.session_state.feature_cols}`")
         st.markdown(f"Sensitive attribute distribution in training: ")
         st.write(st.session_state.sensitive_train.value_counts(normalize=True))
@@ -164,34 +168,55 @@ elif st.session_state.current_page == '2. Baseline Model Performance':
     st.markdown(f"To ensure consistency across all evaluations, I'll define a comprehensive function, `evaluate_model`, which computes both accuracy metrics (AUC, F1-score) and fairness metrics (Disparate Impact Ratio (DIR), Statistical Parity Difference (SPD), Equal Opportunity Difference (EOD)). The Disparate Impact Ratio is particularly important as it quantifies the ratio of favorable outcomes for the unprivileged group to the privileged group. According to the Four-fifths rule, this ratio should ideally be $\geq 0.80$.")
     st.markdown(r"")
     st.markdown(r"**Disparate Impact Ratio (DIR):** This metric measures the ratio of the favorable outcome rate (e.g., loan approval rate) for the unprivileged group to the privileged group. A value of 1 indicates perfect fairness. Regulations often require this ratio to be at least 0.80 (the Four-fifths Rule).")
-    st.markdown(r"$$ \text{DIR} = \frac{P(\hat{Y}=1 | A=unprivileged)}{P(\hat{Y}=1 | A=privileged)} $$")
-    st.markdown(r"where $P(\hat{Y}=1 | A=g)$ is the probability of a positive prediction (loan approval) for group $g$.")
+    st.markdown(
+        r"""
+$$
+\text{DIR} = \frac{P(\hat{Y}=1 | A=unprivileged)}{P(\hat{Y}=1 | A=privileged)}
+$$""")
+    st.markdown(
+        r"where $P(\hat{Y}=1 | A=g)$ is the probability of a positive prediction (loan approval) for group $g$.")
     st.markdown(r"")
     st.markdown(r"**Statistical Parity Difference (SPD):** This metric measures the difference in the favorable outcome rates between the privileged and unprivileged groups. An SPD of 0 indicates perfect fairness.")
-    st.markdown(r"$$ \text{SPD} = P(\hat{Y}=1 | A=unprivileged) - P(\hat{Y}=1 | A=privileged) $$")
-    st.markdown(r"where $P(\hat{Y}=1 | A=g)$ is the probability of a positive prediction (loan approval) for group $g$.")
+    st.markdown(
+        r"""
+$$
+\text{SPD} = P(\hat{Y}=1 | A=unprivileged) - P(\hat{Y}=1 | A=privileged)
+$$""")
+    st.markdown(
+        r"where $P(\hat{Y}=1 | A=g)$ is the probability of a positive prediction (loan approval) for group $g$.")
     st.markdown(r"")
     st.markdown(r"**Equal Opportunity Difference (EOD):** This metric measures the difference in true positive rates (FNR gap in the provided text, but EOD is standard for true positive rate difference) between the privileged and unprivileged groups among individuals who truly deserve the positive outcome. An EOD of 0 indicates perfect fairness, meaning both groups have an equal chance of being correctly approved if they should be.")
-    st.markdown(r"$$ \text{EOD} = P(\hat{Y}=1 | Y=1, A=unprivileged) - P(\hat{Y}=1 | Y=1, A=privileged) $$")
-    st.markdown(r"In the provided context, the FNR (False Negative Rate) gap is calculated as $FNR_{unprivileged} - FNR_{privileged}$. The EOD is typically defined using True Positive Rate (TPR), where $TPR = 1 - FNR$. So, an EOD of 0 for TPRs implies $TPR_{privileged} = TPR_{unprivileged}$, which is equivalent to $FNR_{privileged} = FNR_{unprivileged}$. Thus, the FNR gap in the code directly measures a form of equal opportunity.")
+    st.markdown(
+        r"""
+$$
+\text{EOD} = P(\hat{Y}=1 | Y=1, A=unprivileged) - P(\hat{Y}=1 | Y=1, A=privileged)
+$$""")
+    st.markdown(
+        r"In the provided context, the FNR (False Negative Rate) gap is calculated as $FNR_{unprivileged} - FNR_{privileged}$. The EOD is typically defined using True Positive Rate (TPR), where $TPR = 1 - FNR$. So, an EOD of 0 for TPRs implies $TPR_{privileged} = TPR_{unprivileged}$, which is equivalent to $FNR_{privileged} = FNR_{unprivileged}$. Thus, the FNR gap in the code directly measures a form of equal opportunity.")
     st.markdown(f"")
 
     if not st.session_state.get('X_train') is not None:
-        st.warning("Please generate data first from '1. Setup & Data Generation' page.")
+        st.warning(
+            "Please generate data first from '1. Setup & Data Generation' page.")
         if st.button("Go to Setup & Data Generation"):
             st.session_state.current_page = "1. Setup & Data Generation"
             st.rerun()
     else:
         if not st.session_state.get('baseline_results'):
             with st.spinner("Training baseline model and evaluating..."):
-                baseline_model = XGBClassifier(n_estimators=200, max_depth=4, learning_rate=0.1, random_state=42, use_label_encoder=False, eval_metric='logloss')
-                baseline_model.fit(st.session_state.X_train[st.session_state.feature_cols], st.session_state.y_train)
-                
-                y_pred_base = baseline_model.predict(st.session_state.X_test[st.session_state.feature_cols])
-                y_prob_base = baseline_model.predict_proba(st.session_state.X_test[st.session_state.feature_cols])[:, 1]
-                
-                baseline_results = evaluate_model(st.session_state.y_test, y_pred_base, y_prob_base, st.session_state.sensitive_test, 'Baseline (Biased)')
-                
+                baseline_model = XGBClassifier(
+                    n_estimators=200, max_depth=4, learning_rate=0.1, random_state=42, use_label_encoder=False, eval_metric='logloss')
+                baseline_model.fit(
+                    st.session_state.X_train[st.session_state.feature_cols], st.session_state.y_train)
+
+                y_pred_base = baseline_model.predict(
+                    st.session_state.X_test[st.session_state.feature_cols])
+                y_prob_base = baseline_model.predict_proba(
+                    st.session_state.X_test[st.session_state.feature_cols])[:, 1]
+
+                baseline_results = evaluate_model(
+                    st.session_state.y_test, y_pred_base, y_prob_base, st.session_state.sensitive_test, 'Baseline (Biased)')
+
                 st.session_state.baseline_model = baseline_model
                 st.session_state.y_pred_base = y_pred_base
                 st.session_state.y_prob_base = y_prob_base
@@ -200,19 +225,25 @@ elif st.session_state.current_page == '2. Baseline Model Performance':
                 st.session_state.unprivileged_group = baseline_results['unprivileged_group']
             st.success("Baseline model trained and evaluated!")
 
-        st.subheader("--- Baseline Model Evaluation ---")
-        st.write(pd.DataFrame([st.session_state.baseline_results]).T.rename(columns={0: 'Value'}))
-        
+        st.subheader("Baseline Model Evaluation")
+        st.write(pd.DataFrame([st.session_state.baseline_results]).T.rename(
+            columns={0: 'Value'}))
+
         st.subheader("2.1 Interpretation of Baseline Results")
         if st.session_state.baseline_results:
-            st.markdown(f"The baseline evaluation provides a quantitative snapshot of our current credit model's performance and, critically, its fairness. With a Disparate Impact Ratio (DIR) of `{st.session_state.baseline_results['dir']:.3f}`, our model clearly `{st.session_state.baseline_results['four_fifths']}` the Four-fifths Rule. This indicates a substantial disparity in approval rates between the privileged (`{st.session_state.privileged_group}`) and unprivileged (`{st.session_state.unprivileged_group}`) groups. The Statistical Parity Difference (SPD) of `{st.session_state.baseline_results['spd']:.4f}` and Equal Opportunity Difference (EOD) of `{st.session_state.baseline_results['eod']:.4f}` further confirm this bias, showing unequal outcomes and opportunities for deserving applicants across groups.")
+            st.markdown(
+                f"The baseline evaluation provides a quantitative snapshot of our current credit model's performance and, critically, its fairness. With a Disparate Impact Ratio (DIR) of `{st.session_state.baseline_results['dir']:.3f}`, our model clearly `{st.session_state.baseline_results['four_fifths']}` the Four-fifths Rule. This indicates a substantial disparity in approval rates between the privileged (`{st.session_state.privileged_group}`) and unprivileged (`{st.session_state.unprivileged_group}`) groups. The Statistical Parity Difference (SPD) of `{st.session_state.baseline_results['spd']:.4f}` and Equal Opportunity Difference (EOD) of `{st.session_state.baseline_results['eod']:.4f}` further confirm this bias, showing unequal outcomes and opportunities for deserving applicants across groups.")
             st.markdown(f"")
             st.markdown(f"For Apex Credit Solutions, this means:")
-            st.markdown(f"*   **High Regulatory Risk:** The current model is non-compliant and could lead to significant fines and legal action.")
-            st.markdown(f"*   **Reputational Damage:** Continued use of such a model erodes public trust and damages our brand.")
-            st.markdown(f"*   **Ethical Obligation:** We are ethically bound to address this bias and ensure equitable treatment.")
+            st.markdown(
+                f"*   **High Regulatory Risk:** The current model is non-compliant and could lead to significant fines and legal action.")
+            st.markdown(
+                f"*   **Reputational Damage:** Continued use of such a model erodes public trust and damages our brand.")
+            st.markdown(
+                f"*   **Ethical Obligation:** We are ethically bound to address this bias and ensure equitable treatment.")
             st.markdown(f"")
-            st.markdown(f"This stark reality underscores the urgency of implementing effective bias mitigation strategies.")
+            st.markdown(
+                f"This stark reality underscores the urgency of implementing effective bias mitigation strategies.")
             st.markdown("---")
             if st.button("Explore Mitigation Strategy 1: Sample Reweighting"):
                 st.session_state.current_page = "3. Strategy 1: Sample Reweighting"
@@ -221,45 +252,63 @@ elif st.session_state.current_page == '2. Baseline Model Performance':
 elif st.session_state.current_page == '3. Strategy 1: Sample Reweighting':
     st.header("3. Strategy 1: Pre-Processing - Sample Reweighting")
     st.markdown(f"One of the simplest yet effective pre-processing techniques is sample reweighting. The idea is to adjust the influence of individual data points during model training. If certain sensitive groups or group-outcome combinations are underrepresented or disadvantaged in the training data, we can assign them higher weights. This ensures the model learns equally from all segments of the population, thereby reducing bias.")
-    st.markdown(r"For each combination of group $g$ and label $l$ (e.g., 'Group B' and 'loan_approved=0'), the weight $W_{g,l}$ is calculated as:")
-    st.markdown(r"$$ W_{g,l} = \frac{N}{K \cdot N_{g,l}} $$")
+    st.markdown(
+        r"For each combination of group $g$ and label $l$ (e.g., 'Group B' and 'loan_approved=0'), the weight $W_{g,l}$ is calculated as:")
+    st.markdown(r"""
+$$
+W_{g,l} = \frac{N}{K \cdot N_{g,l}}
+$$""")
     st.markdown(r"where:")
-    st.markdown(r"*   $N$ is the total number of samples in the training dataset.")
-    st.markdown(r"*   $K$ is the total number of unique (group, label) combinations.")
-    st.markdown(r"*   $N_{g,l}$ is the count of samples belonging to group $g$ with label $l$.")
+    st.markdown(
+        r"*   $N$ is the total number of samples in the training dataset.")
+    st.markdown(
+        r"*   $K$ is the total number of unique (group, label) combinations.")
+    st.markdown(
+        r"*   $N_{g,l}$ is the count of samples belonging to group $g$ with label $l$.")
     st.markdown(f"")
     st.markdown(f"This method ensures that each (group, label) intersection contributes equally to the loss function during training, helping to correct both class imbalance and group imbalance simultaneously. This is analogous to `class_weight='balanced'` in scikit-learn, but extended to group-outcome intersections.")
 
     if not st.session_state.get('baseline_results'):
-        st.warning("Please complete the '2. Baseline Model Performance' step first.")
+        st.warning(
+            "Please complete the '2. Baseline Model Performance' step first.")
         if st.button("Go to Baseline Model Performance"):
             st.session_state.current_page = "2. Baseline Model Performance"
             st.rerun()
     else:
         if not st.session_state.get('reweighted_results'):
             with st.spinner("Applying sample reweighting and retraining model..."):
-                fairness_weights = compute_fairness_weights(st.session_state.y_train, st.session_state.sensitive_train)
-                st.info(f"Weight range for reweighting: {fairness_weights.min():.2f} to {fairness_weights.max():.2f}")
-                
-                reweighted_model = XGBClassifier(n_estimators=200, max_depth=4, learning_rate=0.1, random_state=42, use_label_encoder=False, eval_metric='logloss')
-                reweighted_model.fit(st.session_state.X_train[st.session_state.feature_cols], st.session_state.y_train, sample_weight=fairness_weights)
-                
-                y_pred_rw = reweighted_model.predict(st.session_state.X_test[st.session_state.feature_cols])
-                y_prob_rw = reweighted_model.predict_proba(st.session_state.X_test[st.session_state.feature_cols])[:, 1]
-                reweighted_results = evaluate_model(st.session_state.y_test, y_pred_rw, y_prob_rw, st.session_state.sensitive_test, 'Reweighted')
-                
+                fairness_weights = compute_fairness_weights(
+                    st.session_state.y_train, st.session_state.sensitive_train)
+                st.info(
+                    f"Weight range for reweighting: {fairness_weights.min():.2f} to {fairness_weights.max():.2f}")
+
+                reweighted_model = XGBClassifier(
+                    n_estimators=200, max_depth=4, learning_rate=0.1, random_state=42, use_label_encoder=False, eval_metric='logloss')
+                reweighted_model.fit(
+                    st.session_state.X_train[st.session_state.feature_cols], st.session_state.y_train, sample_weight=fairness_weights)
+
+                y_pred_rw = reweighted_model.predict(
+                    st.session_state.X_test[st.session_state.feature_cols])
+                y_prob_rw = reweighted_model.predict_proba(
+                    st.session_state.X_test[st.session_state.feature_cols])[:, 1]
+                reweighted_results = evaluate_model(
+                    st.session_state.y_test, y_pred_rw, y_prob_rw, st.session_state.sensitive_test, 'Reweighted')
+
                 st.session_state.reweighted_model = reweighted_model
                 st.session_state.reweighted_results = reweighted_results
             st.success("Sample reweighting applied and model re-evaluated!")
 
-        st.subheader("--- Reweighted Model Evaluation ---")
-        st.write(pd.DataFrame([st.session_state.reweighted_results]).T.rename(columns={0: 'Value'}))
+        st.subheader("Reweighted Model Evaluation")
+        st.write(pd.DataFrame([st.session_state.reweighted_results]).T.rename(
+            columns={0: 'Value'}))
 
         st.subheader("3.1 Interpretation of Reweighting Results")
         if st.session_state.reweighted_results:
-            st.markdown(f"After applying sample reweighting, I observe a noticeable improvement in our fairness metrics. The Disparate Impact Ratio (DIR) has increased to `{st.session_state.reweighted_results['dir']:.3f}`, which means it `{st.session_state.reweighted_results['four_fifths']}` the 0.80 threshold for the Four-fifths Rule. This indicates that the approval rates for `{st.session_state.unprivileged_group}` are now more comparable to `{st.session_state.privileged_group}`. The Statistical Parity Difference (SPD) of `{st.session_state.reweighted_results['spd']:.4f}` and Equal Opportunity Difference (EOD) of `{st.session_state.reweighted_results['eod']:.4f}` also show reductions, suggesting a fairer distribution of outcomes.")
+            st.markdown(
+                f"After applying sample reweighting, I observe a noticeable improvement in our fairness metrics. The Disparate Impact Ratio (DIR) has increased to `{st.session_state.reweighted_results['dir']:.3f}`, which means it `{st.session_state.reweighted_results['four_fifths']}` the 0.80 threshold for the Four-fifths Rule. This indicates that the approval rates for `{st.session_state.unprivileged_group}` are now more comparable to `{st.session_state.privileged_group}`. The Statistical Parity Difference (SPD) of `{st.session_state.reweighted_results['spd']:.4f}` and Equal Opportunity Difference (EOD) of `{st.session_state.reweighted_results['eod']:.4f}` also show reductions, suggesting a fairer distribution of outcomes.")
             st.markdown(f"")
-            st.markdown(f"However, this improvement in fairness typically comes with a slight trade-off in accuracy. The AUC for the reweighted model is `{st.session_state.reweighted_results['auc']:.4f}`, compared to the baseline AUC of `{st.session_state.baseline_results['auc']:.4f}`. As a CFA, I view this accuracy cost as the \"premium\" we pay for regulatory compliance insurance. It's a prudent risk management decision: a small reduction in overall predictive power prevents potentially massive regulatory penalties and reputational damage. This reweighting strategy is considered a \"low-regret\" option due to its minimal code changes and general legal acceptance.")
+            st.markdown(
+                f"However, this improvement in fairness typically comes with a slight trade-off in accuracy. The AUC for the reweighted model is `{st.session_state.reweighted_results['auc']:.4f}`, compared to the baseline AUC of `{st.session_state.baseline_results['auc']:.4f}`. As a CFA, I view this accuracy cost as the \"premium\" we pay for regulatory compliance insurance. It's a prudent risk management decision: a small reduction in overall predictive power prevents potentially massive regulatory penalties and reputational damage. This reweighting strategy is considered a \"low-regret\" option due to its minimal code changes and general legal acceptance.")
             st.markdown("---")
             if st.button("Explore Mitigation Strategy 2: Proxy Feature Removal"):
                 st.session_state.current_page = "4. Strategy 2: Proxy Feature Removal"
@@ -271,13 +320,15 @@ elif st.session_state.current_page == '4. Strategy 2: Proxy Feature Removal':
     st.warning("**Practitioner Warning:** Removing proxy features is the bluntest mitigation tool. While simple, it can be counterproductive if the proxy carries genuine predictive information, losing legitimate signal along with the bias. Worse, the model might compensate by shifting weight to other, less obvious proxies, a phenomenon known as \"proxy proliferation.\" Always re-run a full fairness audit after removal to confirm the bias has actually decreased.")
 
     if not st.session_state.get('baseline_results'):
-        st.warning("Please complete the '2. Baseline Model Performance' step first.")
+        st.warning(
+            "Please complete the '2. Baseline Model Performance' step first.")
         if st.button("Go to Baseline Model Performance"):
             st.session_state.current_page = "2. Baseline Model Performance"
             st.rerun()
     else:
         proxy_features = ['revolving_utilization', 'home_ownership_encoded']
-        st.markdown(f"Based on prior analysis, the identified proxy features are: `{proxy_features}`")
+        st.markdown(
+            f"Based on prior analysis, the identified proxy features are: `{proxy_features}`")
 
         if not st.session_state.get('proxy_removed_results'):
             with st.spinner("Removing proxy features and retraining model..."):
@@ -289,12 +340,14 @@ elif st.session_state.current_page == '4. Strategy 2: Proxy Feature Removal':
                 st.session_state.proxy_removed_results = proxy_removed_results
             st.success("Proxy features removed and model re-evaluated!")
 
-        st.subheader("--- Proxy Removed Model Evaluation ---")
-        st.write(pd.DataFrame([st.session_state.proxy_removed_results]).T.rename(columns={0: 'Value'}))
+        st.subheader("Proxy Removed Model Evaluation")
+        st.write(pd.DataFrame([st.session_state.proxy_removed_results]).T.rename(
+            columns={0: 'Value'}))
 
         st.subheader("4.1 Interpretation of Proxy Feature Removal Results")
         if st.session_state.proxy_removed_results:
-            st.markdown(f"The impact of proxy feature removal on both fairness and accuracy is usually more unpredictable than reweighting. For this strategy, the DIR is `{st.session_state.proxy_removed_results['dir']:.3f}` (`{st.session_state.proxy_removed_results['four_fifths']}` the Four-fifths Rule) and AUC is `{st.session_state.proxy_removed_results['auc']:.4f}`. While it might improve fairness by reducing the indirect influence of sensitive attributes, it often leads to a more significant drop in overall model accuracy if the removed features were genuinely predictive. It's crucial to ensure that the fairness improvement is substantial enough to justify the accuracy loss.")
+            st.markdown(
+                f"The impact of proxy feature removal on both fairness and accuracy is usually more unpredictable than reweighting. For this strategy, the DIR is `{st.session_state.proxy_removed_results['dir']:.3f}` (`{st.session_state.proxy_removed_results['four_fifths']}` the Four-fifths Rule) and AUC is `{st.session_state.proxy_removed_results['auc']:.4f}`. While it might improve fairness by reducing the indirect influence of sensitive attributes, it often leads to a more significant drop in overall model accuracy if the removed features were genuinely predictive. It's crucial to ensure that the fairness improvement is substantial enough to justify the accuracy loss.")
             st.markdown(f"")
             st.markdown(f"In this scenario, I observe the changes in DIR, SPD, and EOD. This highlights the trade-off. For regulators, this approach is easy to explain (\"we removed features that correlate with protected attributes\"), but from a technical standpoint, the risk of proxy proliferation means this approach requires careful validation and should not be assumed to fully eliminate bias.")
             st.markdown("---")
@@ -306,12 +359,17 @@ elif st.session_state.current_page == '5. Strategy 3: Fairness-Constrained Train
     st.header("5. Strategy 3: In-Processing - Fairness-Constrained Training")
     st.markdown(f"In-processing methods directly incorporate fairness considerations into the model's training algorithm. This is often considered the most principled approach as it allows the model to find the optimal balance between accuracy and fairness. `fairlearn`'s `ExponentiatedGradient` algorithm is a powerful tool that achieves this by solving a constrained optimization problem. It ensures that the model meets specific fairness criteria (like Demographic Parity or Equalized Odds) while maintaining the highest possible accuracy.")
     st.markdown(r"The `ExponentiatedGradient` algorithm works by finding a randomized classifier that minimizes the standard loss function subject to fairness constraints. For example, for Demographic Parity, the objective is to minimize the model's loss $L(\theta)$ such that the Disparate Impact Ratio is maintained above a certain threshold (e.g., $0.80$):")
-    st.markdown(r"$$ \min_{\theta} L(\theta) \quad \text{subject to} \quad \text{DIR}(\theta) \geq 0.80 $$")
+    st.markdown(
+        r"""
+$$
+\min_{\theta} L(\theta) \quad \text{subject to} \quad \text{DIR}(\theta) \geq 0.80
+$$""")
     st.markdown(r"where $\theta$ represents the model parameters. This is achieved by finding the Lagrangian dual of the unconstrained problem, effectively adding a \"price\" for unfairness that the algorithm trades off against accuracy.")
     st.markdown(f"")
 
     if not st.session_state.get('baseline_results'):
-        st.warning("Please complete the '2. Baseline Model Performance' step first.")
+        st.warning(
+            "Please complete the '2. Baseline Model Performance' step first.")
         if st.button("Go to Baseline Model Performance"):
             st.session_state.current_page = "2. Baseline Model Performance"
             st.rerun()
@@ -334,24 +392,31 @@ elif st.session_state.current_page == '5. Strategy 3: Fairness-Constrained Train
                 if constraint_choice == 'demographic_parity':
                     st.session_state.fair_dp_model = fair_model
                     st.session_state.fair_dp_results = fair_results
-                else: # equalized_odds
+                else:  # equalized_odds
                     st.session_state.fair_eod_model = fair_model
                     st.session_state.fair_eod_results = fair_results
-            st.success(f"Fairness-constrained model ({constraint_choice.replace('_', ' ').title()}) trained and evaluated!")
+            st.success(
+                f"Fairness-constrained model ({constraint_choice.replace('_', ' ').title()}) trained and evaluated!")
 
         if st.session_state.get('fair_dp_results') and constraint_choice == 'demographic_parity':
-            st.subheader("--- Fairness-Constrained (Demographic Parity) Model Evaluation ---")
-            st.write(pd.DataFrame([st.session_state.fair_dp_results]).T.rename(columns={0: 'Value'}))
+            st.subheader(
+                "Fairness-Constrained (Demographic Parity) Model Evaluation")
+            st.write(pd.DataFrame([st.session_state.fair_dp_results]).T.rename(
+                columns={0: 'Value'}))
             st.markdown(f"")
-            st.markdown(f"The results from fairness-constrained training generally demonstrate a more balanced trade-off between accuracy and fairness compared to pre-processing methods. By optimizing for both simultaneously, `ExponentiatedGradient` aims to achieve the best possible accuracy while meeting the specified fairness constraints. I observe strong improvements in DIR (`{st.session_state.fair_dp_results['dir']:.3f}`), SPD (`{st.session_state.fair_dp_results['spd']:.4f}`), and EOD (`{st.session_state.fair_dp_results['eod']:.4f}`), often leading to full compliance with regulations like the Four-fifths Rule. The AUC drop is typically more controlled (`{st.session_state.fair_dp_results['auc']:.4f}`) than with blunt feature removal.")
+            st.markdown(
+                f"The results from fairness-constrained training generally demonstrate a more balanced trade-off between accuracy and fairness compared to pre-processing methods. By optimizing for both simultaneously, `ExponentiatedGradient` aims to achieve the best possible accuracy while meeting the specified fairness constraints. I observe strong improvements in DIR (`{st.session_state.fair_dp_results['dir']:.3f}`), SPD (`{st.session_state.fair_dp_results['spd']:.4f}`), and EOD (`{st.session_state.fair_dp_results['eod']:.4f}`), often leading to full compliance with regulations like the Four-fifths Rule. The AUC drop is typically more controlled (`{st.session_state.fair_dp_results['auc']:.4f}`) than with blunt feature removal.")
             st.markdown(f"")
             st.markdown(f"This is the most principled approach, offering a robust solution to bias. However, it requires specialized algorithms and understanding of various fairness definitions (Demographic Parity vs. Equalized Odds). For Apex Credit Solutions, this method is ideal for long-term strategic model development, where we can invest the time to build a truly fair model.")
 
         if st.session_state.get('fair_eod_results') and constraint_choice == 'equalized_odds':
-            st.subheader("--- Fairness-Constrained (Equalized Odds) Model Evaluation ---")
-            st.write(pd.DataFrame([st.session_state.fair_eod_results]).T.rename(columns={0: 'Value'}))
+            st.subheader(
+                "Fairness-Constrained (Equalized Odds) Model Evaluation")
+            st.write(pd.DataFrame([st.session_state.fair_eod_results]).T.rename(
+                columns={0: 'Value'}))
             st.markdown(f"")
-            st.markdown(f"Similar to Demographic Parity, the Equalized Odds constraint also aims to balance fairness and accuracy. For this constraint, the DIR is `{st.session_state.fair_eod_results['dir']:.3f}`, SPD is `{st.session_state.fair_eod_results['spd']:.4f}`, EOD is `{st.session_state.fair_eod_results['eod']:.4f}`, and AUC is `{st.session_state.fair_eod_results['auc']:.4f}`. This method is effective when the goal is to ensure equal true positive rates across groups, addressing potential issues where a deserving individual from one group is less likely to be approved than a deserving individual from another.")
+            st.markdown(
+                f"Similar to Demographic Parity, the Equalized Odds constraint also aims to balance fairness and accuracy. For this constraint, the DIR is `{st.session_state.fair_eod_results['dir']:.3f}`, SPD is `{st.session_state.fair_eod_results['spd']:.4f}`, EOD is `{st.session_state.fair_eod_results['eod']:.4f}`, and AUC is `{st.session_state.fair_eod_results['auc']:.4f}`. This method is effective when the goal is to ensure equal true positive rates across groups, addressing potential issues where a deserving individual from one group is less likely to be approved than a deserving individual from another.")
             st.markdown(f"")
             st.markdown(f"This principled approach requires careful consideration of the specific fairness definition that aligns with regulatory and ethical objectives. For Apex Credit Solutions, understanding the nuances between Demographic Parity and Equalized Odds is crucial for selecting the most appropriate long-term strategy.")
         st.markdown("---")
@@ -360,14 +425,17 @@ elif st.session_state.current_page == '5. Strategy 3: Fairness-Constrained Train
             st.rerun()
 
 elif st.session_state.current_page == '6. Strategy 4: Group-Specific Threshold Calibration':
-    st.header("6. Strategy 4: Post-Processing - Group-Specific Threshold Calibration")
-    st.markdown(f"Post-processing involves adjusting the model's outputs after predictions have been made, without altering the underlying model itself. A common technique is group-specific threshold calibration, where different decision thresholds are applied to different sensitive groups to achieve a target fairness level. For instance, if `{st.session_state.unprivileged_group}` has a lower approval rate, we might lower their approval threshold while keeping `{st.session_state.privileged_group}`'s threshold fixed.")
+    st.header(
+        "6. Strategy 4: Post-Processing - Group-Specific Threshold Calibration")
+    st.markdown(
+        f"Post-processing involves adjusting the model's outputs after predictions have been made, without altering the underlying model itself. A common technique is group-specific threshold calibration, where different decision thresholds are applied to different sensitive groups to achieve a target fairness level. For instance, if `{st.session_state.unprivileged_group}` has a lower approval rate, we might lower their approval threshold while keeping `{st.session_state.privileged_group}`'s threshold fixed.")
     st.markdown(r"The objective here is to find group-specific thresholds that lead to a desired Disparate Impact Ratio. We can achieve this by keeping the advantaged group's threshold fixed (e.g., at $0.5$) and searching for the disadvantaged group's threshold that equalizes approval rates to achieve the target DIR. This search can be performed using scalar optimization techniques.")
     st.markdown(r"")
     st.warning("**Practitioner Warning:** Post-processing, especially group-specific thresholds, is legally controversial. Explicitly using protected attributes to set different decision thresholds can be viewed as discriminatory itself by some legal interpretations (\"reverse discrimination\"). While faster to deploy and easier to reverse, it requires careful legal review and approval from our firm's legal counsel. It is often best used as an interim fix while a more principled in-processing solution is being developed.")
 
     if not st.session_state.get('baseline_results'):
-        st.warning("Please complete the '2. Baseline Model Performance' step first.")
+        st.warning(
+            "Please complete the '2. Baseline Model Performance' step first.")
         if st.button("Go to Baseline Model Performance"):
             st.session_state.current_page = "2. Baseline Model Performance"
             st.rerun()
@@ -389,12 +457,16 @@ elif st.session_state.current_page == '6. Strategy 4: Group-Specific Threshold C
             st.success("Thresholds calibrated and model re-evaluated!")
 
         if st.session_state.get('threshold_calibrated_results'):
-            st.subheader("--- Threshold Calibrated Model Evaluation ---")
-            st.write(pd.DataFrame([st.session_state.threshold_calibrated_results]).T.rename(columns={0: 'Value'}))
-            st.markdown(f"**Calibrated Thresholds:** {st.session_state.threshold_calibrated_results.get('thresholds', 'N/A')}")
+            st.subheader("Threshold Calibrated Model Evaluation")
+            st.write(pd.DataFrame([st.session_state.threshold_calibrated_results]).T.rename(
+                columns={0: 'Value'}))
+            st.markdown(
+                f"**Calibrated Thresholds:** {st.session_state.threshold_calibrated_results.get('thresholds', 'N/A')}")
 
-            st.subheader("6.1 Interpretation of Group-Specific Threshold Calibration Results")
-            st.markdown(f"Threshold calibration can be highly effective in closing the fairness gap quickly. I observe a significant improvement in the Disparate Impact Ratio (DIR) to `{st.session_state.threshold_calibrated_results['dir']:.3f}`, often meeting or exceeding our target, and corresponding reductions in SPD (`{st.session_state.threshold_calibrated_results['spd']:.4f}`) and EOD (`{st.session_state.threshold_calibrated_results['eod']:.4f}`). The crucial advantage of post-processing is that it doesn't require retraining the model, making it exceptionally fast to implement and revert. This means the AUC remains unchanged or changes only marginally (`{st.session_state.threshold_calibrated_results['auc']:.4f}`) depending on how the initial probability is interpreted for evaluation, as we are only changing the decision boundary, not the model's underlying scores.")
+            st.subheader(
+                "6.1 Interpretation of Group-Specific Threshold Calibration Results")
+            st.markdown(
+                f"Threshold calibration can be highly effective in closing the fairness gap quickly. I observe a significant improvement in the Disparate Impact Ratio (DIR) to `{st.session_state.threshold_calibrated_results['dir']:.3f}`, often meeting or exceeding our target, and corresponding reductions in SPD (`{st.session_state.threshold_calibrated_results['spd']:.4f}`) and EOD (`{st.session_state.threshold_calibrated_results['eod']:.4f}`). The crucial advantage of post-processing is that it doesn't require retraining the model, making it exceptionally fast to implement and revert. This means the AUC remains unchanged or changes only marginally (`{st.session_state.threshold_calibrated_results['auc']:.4f}`) depending on how the initial probability is interpreted for evaluation, as we are only changing the decision boundary, not the model's underlying scores.")
             st.markdown(f"")
             st.markdown(f"For Apex Credit Solutions, this is a valuable tool for rapid response to detected bias or as an interim solution. However, the legal and ethical implications of using group membership to differentiate decision thresholds demand thorough consultation with our legal department before deployment.")
         st.markdown("---")
@@ -408,7 +480,8 @@ elif st.session_state.current_page == '7. Comprehensive Comparison & Recommendat
     st.markdown(f"")
 
     if not st.session_state.get('threshold_calibrated_results') or not st.session_state.get('fair_dp_results') or not st.session_state.get('reweighted_results') or not st.session_state.get('proxy_removed_results'):
-        st.warning("Please complete all mitigation strategies (pages 3-6) before viewing the comprehensive comparison.")
+        st.warning(
+            "Please complete all mitigation strategies (pages 3-6) before viewing the comprehensive comparison.")
         if st.button("Go to Strategy 1"):
             st.session_state.current_page = "3. Strategy 1: Sample Reweighting"
             st.rerun()
@@ -423,15 +496,17 @@ elif st.session_state.current_page == '7. Comprehensive Comparison & Recommendat
         if st.session_state.get('fair_eod_results'):
             all_results_list.append(st.session_state.fair_eod_results)
         if st.session_state.get('threshold_calibrated_results'):
-            all_results_list.append(st.session_state.threshold_calibrated_results)
-        
+            all_results_list.append(
+                st.session_state.threshold_calibrated_results)
+
         st.session_state.all_results_df = pd.DataFrame(all_results_list)
 
-        st.subheader("--- FIVE-WAY MITIGATION COMPARISON ---")
-        metrics_display_cols = ['label', 'auc', 'f1', 'dir', 'spd', 'eod', 'four_fifths']
+        st.subheader("FIVE-WAY MITIGATION COMPARISON")
+        metrics_display_cols = ['label', 'auc',
+                                'f1', 'dir', 'spd', 'eod', 'four_fifths']
         st.dataframe(st.session_state.all_results_df[metrics_display_cols])
 
-        st.subheader("--- ACCURACY COST OF EACH MITIGATION ---")
+        st.subheader("ACCURACY COST OF EACH MITIGATION")
         baseline_auc = st.session_state.baseline_results['auc']
         baseline_dir = st.session_state.baseline_results['dir']
 
@@ -440,69 +515,67 @@ elif st.session_state.current_page == '7. Comprehensive Comparison & Recommendat
             if row['label'] != 'Baseline (Biased)':
                 auc_cost = baseline_auc - row['auc']
                 dir_gain = row['dir'] - baseline_dir
-                auc_cost_data.append({'Strategy': row['label'], 'AUC Cost': auc_cost, 'DIR Gain': dir_gain})
+                auc_cost_data.append(
+                    {'Strategy': row['label'], 'AUC Cost': auc_cost, 'DIR Gain': dir_gain})
         df_auc_cost_summary = pd.DataFrame(auc_cost_data)
         st.dataframe(df_auc_cost_summary.set_index('Strategy'))
 
         st.subheader("7.1 Visualizing Mitigation Impacts")
         st.markdown("Visualizations are key to understanding the trade-offs and communicating our findings to stakeholders, including risk committees and legal counsel.")
 
-        st.markdown("#### 7.1.1 Accuracy-Fairness Pareto Frontier")
-        st.markdown(f"This scatter plot illustrates the trade-off between accuracy (AUC) and fairness (DIR) for each strategy. It helps identify Pareto-optimal strategies—those where you cannot improve fairness without sacrificing accuracy, or vice-versa. The Four-fifths Rule threshold line is critical for visual compliance assessment.")
-        fig_pareto, ax_pareto = plt.subplots(figsize=(10, 6))
-        sns.scatterplot(x='dir', y='auc', hue='label', data=st.session_state.all_results_df, s=150, style='label', ax=ax_pareto)
-        ax_pareto.axvline(x=0.80, color='r', linestyle='--', label='Four-fifths Rule (0.80 DIR)')
-        ax_pareto.set_title('Accuracy-Fairness Pareto Frontier (AUC vs. DIR)')
-        ax_pareto.set_xlabel('Disparate Impact Ratio (DIR)')
-        ax_pareto.set_ylabel('Area Under ROC Curve (AUC)')
-        ax_pareto.set_xlim(0.5, 1.1)
-        ax_pareto.set_ylim(0.7, 0.9)
-        ax_pareto.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-        ax_pareto.grid(True)
-        st.pyplot(fig_pareto)
-        plt.close(fig_pareto)
-
-        st.markdown("#### 7.1.2 Before/After Approval Rate Bars for Sensitive Groups")
+        st.markdown(
+            "#### 7.1.1 Before/After Approval Rate Bars for Sensitive Groups")
         st.markdown(f"These grouped bar charts visually demonstrate how each strategy impacts the approval rates for different sensitive groups, explicitly showing the gap closure.")
         privileged_group = st.session_state.privileged_group
         unprivileged_group = st.session_state.unprivileged_group
 
-        df_plot_rates = pd.DataFrame(columns=['Strategy', 'Group', 'Approval Rate'])
+        df_plot_rates = pd.DataFrame(
+            columns=['Strategy', 'Group', 'Approval Rate'])
         for _, row in st.session_state.all_results_df.iterrows():
             rates = row['approval_rates']
             df_plot_rates = pd.concat([df_plot_rates, pd.DataFrame([
-                {'Strategy': row['label'], 'Group': privileged_group, 'Approval Rate': rates.get(privileged_group, 0)},
-                {'Strategy': row['label'], 'Group': unprivileged_group, 'Approval Rate': rates.get(unprivileged_group, 0)}
+                {'Strategy': row['label'], 'Group': privileged_group,
+                    'Approval Rate': rates.get(privileged_group, 0)},
+                {'Strategy': row['label'], 'Group': unprivileged_group,
+                    'Approval Rate': rates.get(unprivileged_group, 0)}
             ])], ignore_index=True)
 
         fig_rates, ax_rates = plt.subplots(figsize=(12, 7))
-        sns.barplot(x='Strategy', y='Approval Rate', hue='Group', data=df_plot_rates, palette='viridis', ax=ax_rates)
-        ax_rates.set_title(f'Approval Rates by Strategy for {privileged_group} and {unprivileged_group}')
+        sns.barplot(x='Strategy', y='Approval Rate', hue='Group',
+                    data=df_plot_rates, palette='viridis', ax=ax_rates)
+        ax_rates.set_title(
+            f'Approval Rates by Strategy for {privileged_group} and {unprivileged_group}')
         ax_rates.set_ylabel('Approval Rate')
         ax_rates.set_xlabel('Mitigation Strategy')
-        ax_rates.set_xticklabels(ax_rates.get_xticklabels(), rotation=45, ha='right')
+        ax_rates.set_xticklabels(
+            ax_rates.get_xticklabels(), rotation=45, ha='right')
         ax_rates.set_ylim(0, df_plot_rates['Approval Rate'].max() * 1.1)
         ax_rates.grid(axis='y', linestyle='--', alpha=0.7)
-        plt.tight_layout(fig_rates)
+        fig_rates.tight_layout()
         st.pyplot(fig_rates)
         plt.close(fig_rates)
 
-        st.markdown("#### 7.1.3 AUC Cost Bar Chart")
-        st.markdown(f"This bar chart clearly illustrates the accuracy cost of each mitigation strategy relative to the biased baseline.")
+        st.markdown("#### 7.1.2 AUC Cost Bar Chart")
+        st.markdown(
+            f"This bar chart clearly illustrates the accuracy cost of each mitigation strategy relative to the biased baseline.")
         fig_auc_cost, ax_auc_cost = plt.subplots(figsize=(10, 6))
-        sns.barplot(x='Strategy', y='AUC Cost', data=df_auc_cost_summary, palette='magma', ax_auc_cost)
-        ax_auc_cost.set_title('Accuracy Cost (AUC Reduction) per Mitigation Strategy')
+        sns.barplot(x='Strategy', y='AUC Cost',
+                    data=df_auc_cost_summary, palette='magma', ax=ax_auc_cost)
+        ax_auc_cost.set_title(
+            'Accuracy Cost (AUC Reduction) per Mitigation Strategy')
         ax_auc_cost.set_ylabel('AUC Reduction (Baseline AUC - Strategy AUC)')
         ax_auc_cost.set_xlabel('Mitigation Strategy')
-        ax_auc_cost.set_xticklabels(ax_auc_cost.get_xticklabels(), rotation=45, ha='right')
+        ax_auc_cost.set_xticklabels(
+            ax_auc_cost.get_xticklabels(), rotation=45, ha='right')
         ax_auc_cost.grid(axis='y', linestyle='--', alpha=0.7)
-        plt.tight_layout(fig_auc_cost)
+        fig_auc_cost.tight_layout()
         st.pyplot(fig_auc_cost)
         plt.close(fig_auc_cost)
 
         st.subheader("7.2 Mitigation Selection Guide and Recommendation")
-        st.markdown(f"Based on the quantitative metrics and visualizations, I can now formulate a strategic recommendation for Apex Credit Solutions.")
-        
+        st.markdown(
+            f"Based on the quantitative metrics and visualizations, I can now formulate a strategic recommendation for Apex Credit Solutions.")
+
         st.markdown("""
 | Strategy | Best When | AUC Cost | Complexity | Legal Risk |
 | :-------------------- | :------------------------------------------------------------------------------------------------------------------------- | :------- | :--------- | :--------- |
@@ -513,7 +586,8 @@ elif st.session_state.current_page == '7. Comprehensive Comparison & Recommendat
 """)
 
         st.markdown(f"**My Recommendation for Apex Credit Solutions:**")
-        st.markdown(f"Given the critical nature of credit decisions and the high regulatory stakes:")
+        st.markdown(
+            f"Given the critical nature of credit decisions and the high regulatory stakes:")
         st.markdown(f"1.  **Immediate Action (Interim Fix):** Implement **Sample Reweighting**. It offers a rapid improvement in fairness with a manageable accuracy trade-off, is legally low-risk, and requires minimal operational changes. This addresses the most urgent compliance failure immediately.")
         st.markdown(f"    *   *Rationale:* This is our \"low-regret\" strategy, providing acceptable fairness gains quickly while we work on a more robust solution.")
         st.markdown(f"2.  **Strategic Long-Term Solution:** Initiate development and validation for a model using **Fairness-Constrained Training** (e.g., Demographic Parity). This in-processing approach offers the most principled and robust solution by optimizing for both accuracy and fairness simultaneously, leading to better compliance stability.")
@@ -531,35 +605,47 @@ elif st.session_state.current_page == '8. Compliance Report':
     st.markdown(f"")
     st.markdown(f"---")
     st.subheader("Compliance Documentation for Risk Committee:")
-    
+
     if st.session_state.get('baseline_results'):
-        st.markdown(f"*   **Bias Detected:** Disparate Impact against `{st.session_state.unprivileged_group}` (Baseline DIR: `{st.session_state.baseline_results['dir']:.3f}`, failing Four-fifths Rule).")
+        st.markdown(
+            f"*   **Bias Detected:** Disparate Impact against `{st.session_state.unprivileged_group}` (Baseline DIR: `{st.session_state.baseline_results['dir']:.3f}`, failing Four-fifths Rule).")
 
         interim_strategy_label = "Sample Reweighting"
-        interim_auc_cost = (st.session_state.baseline_results['auc'] - st.session_state.reweighted_results['auc']) if st.session_state.get('reweighted_results') else 0.0
-        interim_dir = st.session_state.reweighted_results['dir'] if st.session_state.get('reweighted_results') else st.session_state.baseline_results['dir']
+        interim_auc_cost = (
+            st.session_state.baseline_results['auc'] - st.session_state.reweighted_results['auc']) if st.session_state.get('reweighted_results') else 0.0
+        interim_dir = st.session_state.reweighted_results['dir'] if st.session_state.get(
+            'reweighted_results') else st.session_state.baseline_results['dir']
 
         strategic_strategy_label = "Fairness-Constrained Training (Demographic Parity)"
-        strategic_auc_cost = (st.session_state.baseline_results['auc'] - st.session_state.fair_dp_results['auc']) if st.session_state.get('fair_dp_results') else 0.0
-        strategic_dir = st.session_state.fair_dp_results['dir'] if st.session_state.get('fair_dp_results') else st.session_state.baseline_results['dir']
+        strategic_auc_cost = (
+            st.session_state.baseline_results['auc'] - st.session_state.fair_dp_results['auc']) if st.session_state.get('fair_dp_results') else 0.0
+        strategic_dir = st.session_state.fair_dp_results['dir'] if st.session_state.get(
+            'fair_dp_results') else st.session_state.baseline_results['dir']
 
-        st.markdown(f"*   **Mitigation Applied:** {interim_strategy_label} (Interim) and {strategic_strategy_label} (Strategic).")
+        st.markdown(
+            f"*   **Mitigation Applied:** {interim_strategy_label} (Interim) and {strategic_strategy_label} (Strategic).")
         if st.session_state.get('reweighted_results'):
-            st.markdown(f"*   **Impact on Accuracy/Fairness (Interim - {interim_strategy_label}):** AUC: `{st.session_state.reweighted_results['auc']:.4f}` (cost: `{interim_auc_cost:+.4f}`), DIR: `{interim_dir:.3f}` (passing Four-fifths Rule).")
+            st.markdown(
+                f"*   **Impact on Accuracy/Fairness (Interim - {interim_strategy_label}):** AUC: `{st.session_state.reweighted_results['auc']:.4f}` (cost: `{interim_auc_cost:+.4f}`), DIR: `{interim_dir:.3f}` (passing Four-fifths Rule).")
         else:
-             st.markdown(f"*   **Impact on Accuracy/Fairness (Interim - {interim_strategy_label}):** Not Run.")
-             
-        if st.session_state.get('fair_dp_results'):
-            st.markdown(f"*   **Impact on Accuracy/Fairness (Strategic - {strategic_strategy_label}):** AUC: `{st.session_state.fair_dp_results['auc']:.4f}` (cost: `{strategic_auc_cost:+.4f}`), DIR: `{strategic_dir:.3f}` (passing Four-fifths Rule).")
-        else:
-             st.markdown(f"*   **Impact on Accuracy/Fairness (Strategic - {strategic_strategy_label}):** Not Run.")
+            st.markdown(
+                f"*   **Impact on Accuracy/Fairness (Interim - {interim_strategy_label}):** Not Run.")
 
-        st.markdown(f"*   **Trade-off Approved By:** [Signatures of Head of Risk, Head of Compliance, Legal Counsel].")
+        if st.session_state.get('fair_dp_results'):
+            st.markdown(
+                f"*   **Impact on Accuracy/Fairness (Strategic - {strategic_strategy_label}):** AUC: `{st.session_state.fair_dp_results['auc']:.4f}` (cost: `{strategic_auc_cost:+.4f}`), DIR: `{strategic_dir:.3f}` (passing Four-fifths Rule).")
+        else:
+            st.markdown(
+                f"*   **Impact on Accuracy/Fairness (Strategic - {strategic_strategy_label}):** Not Run.")
+
+        st.markdown(
+            f"*   **Trade-off Approved By:** [Signatures of Head of Risk, Head of Compliance, Legal Counsel].")
         st.markdown(f"")
         st.markdown(f"This structured approach ensures that Apex Credit Solutions addresses the detected bias pragmatically and ethically, balancing business needs with regulatory demands and our commitment to fair lending.")
     else:
-        st.warning("Baseline results not available. Please run the analysis first.")
-        
+        st.warning(
+            "Baseline results not available. Please run the analysis first.")
+
     st.markdown(f"")
     st.markdown(f"---")
     st.markdown(f"**Further Discussion Points for Financial Professionals:**")

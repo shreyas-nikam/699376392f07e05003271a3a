@@ -9,6 +9,7 @@ from scipy.optimize import minimize_scalar
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 def generate_biased_credit_data(n_samples=10000, random_state=42):
     """
     Generates a synthetic dataset with pre-existing bias for credit scoring.
@@ -28,16 +29,21 @@ def generate_biased_credit_data(n_samples=10000, random_state=42):
     data['credit_score'] = np.random.normal(650, 70, n_samples)
     data['loan_amount'] = np.random.normal(15000, 5000, n_samples)
     data['employment_years'] = np.random.randint(0, 30, n_samples)
-    data['revolving_utilization'] = np.random.beta(5, 10, n_samples) * 0.8 # proxy feature
-    data['home_ownership_encoded'] = np.random.choice([0, 1], n_samples, p=[0.6, 0.4]) # proxy feature
+    data['revolving_utilization'] = np.random.beta(
+        5, 10, n_samples) * 0.8  # proxy feature
+    data['home_ownership_encoded'] = np.random.choice(
+        [0, 1], n_samples, p=[0.6, 0.4])  # proxy feature
 
     # Introduce sensitive attribute: 'race_group'
-    data['race_group'] = np.random.choice(['Group_A', 'Group_B'], n_samples, p=[0.7, 0.3])
+    data['race_group'] = np.random.choice(
+        ['Group_A', 'Group_B'], n_samples, p=[0.7, 0.3])
 
     # Introduce bias: Group B has lower credit scores and higher revolving utilization
     # Also, for the same credit score, Group B is less likely to be approved
-    data.loc[data['race_group'] == 'Group_B', 'credit_score'] = data.loc[data['race_group'] == 'Group_B', 'credit_score'] - 30
-    data.loc[data['race_group'] == 'Group_B', 'revolving_utilization'] = data.loc[data['race_group'] == 'Group_B', 'revolving_utilization'] + 0.1
+    data.loc[data['race_group'] == 'Group_B',
+             'credit_score'] = data.loc[data['race_group'] == 'Group_B', 'credit_score'] - 30
+    data.loc[data['race_group'] == 'Group_B', 'revolving_utilization'] = data.loc[data['race_group']
+                                                                                  == 'Group_B', 'revolving_utilization'] + 0.1
 
     # Define target variable 'loan_approved' (binary)
     # Base approval probability
@@ -46,17 +52,21 @@ def generate_biased_credit_data(n_samples=10000, random_state=42):
         0.02 * (data['income'] / 100000) -
         0.3 * data['revolving_utilization']
     )
-    prob_approved = 1 / (1 + np.exp(-prob_approved)) # Sigmoid transformation
+    prob_approved = 1 / (1 + np.exp(-prob_approved))  # Sigmoid transformation
 
     # Introduce direct bias on loan approval for Group B
-    data['loan_approved'] = (prob_approved > np.random.rand(n_samples)).astype(int)
-    mask_group_b_and_approved = (data['race_group'] == 'Group_B') & (prob_approved > 0.5)
+    data['loan_approved'] = (
+        prob_approved > np.random.rand(n_samples)).astype(int)
+    mask_group_b_and_approved = (
+        data['race_group'] == 'Group_B') & (prob_approved > 0.5)
     num_to_bias = mask_group_b_and_approved.sum()
-    if num_to_bias > 0: # Ensure there are values to process
+    if num_to_bias > 0:  # Ensure there are values to process
         data.loc[mask_group_b_and_approved, 'loan_approved'] = \
-            (prob_approved.loc[mask_group_b_and_approved] * 0.8 > np.random.rand(num_to_bias)).astype(int)
+            (prob_approved.loc[mask_group_b_and_approved]
+             * 0.8 > np.random.rand(num_to_bias)).astype(int)
 
-    feature_cols = ['age', 'income', 'credit_score', 'loan_amount', 'employment_years', 'revolving_utilization', 'home_ownership_encoded']
+    feature_cols = ['age', 'income', 'credit_score', 'loan_amount',
+                    'employment_years', 'revolving_utilization', 'home_ownership_encoded']
     X = data[feature_cols]
     y = data['loan_approved']
     sensitive = data['race_group']
@@ -66,6 +76,7 @@ def generate_biased_credit_data(n_samples=10000, random_state=42):
     )
 
     return X_train, X_test, y_train, y_test, sensitive_train, sensitive_test, feature_cols
+
 
 def evaluate_model(y_true, y_pred, y_prob, sensitive, label='Model'):
     """Compute accuracy and fairness metrics together."""
@@ -79,16 +90,17 @@ def evaluate_model(y_true, y_pred, y_prob, sensitive, label='Model'):
     rates = {}
     for g in groups:
         mask = sensitive == g
-        rates[g] = y_pred[mask].mean() # Approval rate
+        rates[g] = y_pred[mask].mean()  # Approval rate
 
     # Determine privileged and unprivileged groups based on approval rates
     # Assume the group with higher approval rate is privileged at baseline
     # If rates are equal or close, default to alphabetical order for consistency
     if len(groups) == 2:
-        group_rates = sorted(rates.items(), key=lambda item: item[1], reverse=True)
+        group_rates = sorted(
+            rates.items(), key=lambda item: item[1], reverse=True)
         privileged_group = group_rates[0][0]
         unprivileged_group = group_rates[1][0]
-    else: # Handle more than two groups or edge cases, picking first two alphabetically
+    else:  # Handle more than two groups or edge cases, picking first two alphabetically
         sorted_groups = sorted(groups)
         privileged_group = sorted_groups[0]
         unprivileged_group = sorted_groups[1]
@@ -98,7 +110,8 @@ def evaluate_model(y_true, y_pred, y_prob, sensitive, label='Model'):
     rate_unprivileged = rates.get(unprivileged_group, 0)
 
     # Disparate Impact Ratio
-    dir_val = (rate_unprivileged + 1e-6) / (rate_privileged + 1e-6) # Add small epsilon to avoid division by zero
+    # Add small epsilon to avoid division by zero
+    dir_val = (rate_unprivileged + 1e-6) / (rate_privileged + 1e-6)
 
     # Statistical Parity Difference
     spd = rate_unprivileged - rate_privileged
@@ -106,18 +119,19 @@ def evaluate_model(y_true, y_pred, y_prob, sensitive, label='Model'):
     # Equal Opportunity Difference (FNR gap based on provided context)
     fnrs = {}
     for g in groups:
-        mask = (sensitive == g) & (y_true == 1) # Only look at true positive cases
+        # Only look at true positive cases
+        mask = (sensitive == g) & (y_true == 1)
         if y_true[mask].sum() > 0:
             # False Negative Rate (FNR) = (Actual 1s but predicted 0s) / (Total Actual 1s)
-            fnrs[g] = ((y_true[mask] == 1) & (y_pred[mask] == 0)).sum() / y_true[mask].sum()
+            fnrs[g] = ((y_true[mask] == 1) & (y_pred[mask] == 0)
+                       ).sum() / y_true[mask].sum()
         else:
-            fnrs[g] = 0.0 # No true positives for this group, FNR is undefined or 0
+            fnrs[g] = 0.0  # No true positives for this group, FNR is undefined or 0
 
     # EOD is typically defined as TPR_unprivileged - TPR_privileged.
     # Here, we use FNR_unprivileged - FNR_privileged as per the document's FNR gap.
     # EOD (FNR gap) = FNR_unprivileged - FNR_privileged
     eod = fnrs.get(unprivileged_group, 0) - fnrs.get(privileged_group, 0)
-
 
     return {
         'label': label,
@@ -134,17 +148,20 @@ def evaluate_model(y_true, y_pred, y_prob, sensitive, label='Model'):
         'fnr_unprivileged': round(fnrs.get(unprivileged_group, 0), 4),
     }
 
+
 def train_and_evaluate_baseline(X_train, y_train, X_test, y_test, sensitive_test, feature_cols, random_state=42):
     """Trains a baseline XGBoost model and evaluates it."""
     baseline_model = XGBClassifier(n_estimators=200, max_depth=4, learning_rate=0.1,
-                                 random_state=random_state, use_label_encoder=False, eval_metric='logloss')
+                                   random_state=random_state, use_label_encoder=False, eval_metric='logloss')
     baseline_model.fit(X_train[feature_cols], y_train)
 
     y_pred_base = baseline_model.predict(X_test[feature_cols])
     y_prob_base = baseline_model.predict_proba(X_test[feature_cols])[:, 1]
 
-    baseline_results = evaluate_model(y_test, y_pred_base, y_prob_base, sensitive_test, 'Baseline (Biased)')
+    baseline_results = evaluate_model(
+        y_test, y_pred_base, y_prob_base, sensitive_test, 'Baseline (Biased)')
     return baseline_model, y_pred_base, y_prob_base, baseline_results
+
 
 def compute_fairness_weights(y_train_data, sensitive_train_data):
     """
@@ -169,23 +186,28 @@ def compute_fairness_weights(y_train_data, sensitive_train_data):
 
     return weights
 
+
 def train_and_evaluate_reweighted(X_train, y_train, X_test, y_test, sensitive_train, sensitive_test, feature_cols, random_state=42):
     """Trains an XGBoost model with fairness weights and evaluates it."""
     fairness_weights = compute_fairness_weights(y_train, sensitive_train)
 
     reweighted_model = XGBClassifier(n_estimators=200, max_depth=4, learning_rate=0.1,
                                      random_state=random_state, use_label_encoder=False, eval_metric='logloss')
-    reweighted_model.fit(X_train[feature_cols], y_train, sample_weight=fairness_weights)
+    reweighted_model.fit(X_train[feature_cols],
+                         y_train, sample_weight=fairness_weights)
 
     y_pred_rw = reweighted_model.predict(X_test[feature_cols])
     y_prob_rw = reweighted_model.predict_proba(X_test[feature_cols])[:, 1]
-    reweighted_results = evaluate_model(y_test, y_pred_rw, y_prob_rw, sensitive_test, 'Reweighted')
+    reweighted_results = evaluate_model(
+        y_test, y_pred_rw, y_prob_rw, sensitive_test, 'Reweighted')
     return reweighted_model, y_pred_rw, y_prob_rw, reweighted_results
+
 
 def retrain_without_proxies(X_train_data, y_train_data, X_test_data, y_test_data,
                             proxy_features_list, sensitive_test_data, all_features_list, random_state=42):
     """Remove proxy features and retrain the model."""
-    clean_features = [f for f in all_features_list if f not in proxy_features_list]
+    clean_features = [
+        f for f in all_features_list if f not in proxy_features_list]
 
     print(f"Original features: {len(all_features_list)}")
     print(f"Removed proxies: {proxy_features_list}")
@@ -198,8 +220,10 @@ def retrain_without_proxies(X_train_data, y_train_data, X_test_data, y_test_data
     y_pred = model.predict(X_test_data[clean_features])
     y_prob = model.predict_proba(X_test_data[clean_features])[:, 1]
 
-    result = evaluate_model(y_test_data, y_pred, y_prob, sensitive_test_data, 'Proxy Removed')
+    result = evaluate_model(y_test_data, y_pred, y_prob,
+                            sensitive_test_data, 'Proxy Removed')
     return result, model
+
 
 def train_fair_model(X_train_data, y_train_data, X_test_data, y_test_data,
                      sensitive_train_data, sensitive_test_data,
@@ -212,33 +236,37 @@ def train_fair_model(X_train_data, y_train_data, X_test_data, y_test_data,
     elif constraint == 'equalized_odds':
         fairness_constraint = EqualizedOdds()
     else:
-        raise ValueError("Constraint must be 'demographic_parity' or 'equalized_odds'")
+        raise ValueError(
+            "Constraint must be 'demographic_parity' or 'equalized_odds'")
 
     # Base estimator (Logistic Regression for fairlearn compatibility)
     # Using class_weight='balanced' in base estimator helps with class imbalance
-    base_estimator = LogisticRegression(class_weight='balanced', max_iter=1000, C=0.1, solver='liblinear', random_state=random_state)
+    base_estimator = LogisticRegression(
+        class_weight='balanced', max_iter=1000, C=0.1, solver='liblinear', random_state=random_state)
 
     # ExponentiatedGradient with fairness constraints
     fair_model = ExponentiatedGradient(
         base_estimator,
         constraints=fairness_constraint,
-        max_iter=50, # Number of iterations for ExponentiatedGradient
+        max_iter=50,  # Number of iterations for ExponentiatedGradient
     )
 
-    fair_model.fit(X_train_data, y_train_data, sensitive_features=sensitive_train_data)
+    fair_model.fit(X_train_data, y_train_data,
+                   sensitive_features=sensitive_train_data)
 
     # Get predictions (averaged from randomized classifiers)
     y_pred = fair_model.predict(X_test_data)
 
     # For fairlearn's ExponentiatedGradient, _pmf_predict returns probabilities
-    # This method takes sensitive_features as well.
+    # This method only takes X data, not sensitive_features.
     # Note: Accessing private methods like _pmf_predict is generally discouraged,
     # but it's often the only way to get probabilities from ExpGrad directly.
-    y_prob = fair_model._pmf_predict(X_test_data, sensitive_features=sensitive_test_data)[:, 1]
+    y_prob = fair_model._pmf_predict(X_test_data)[:, 1]
 
     result = evaluate_model(y_test_data, y_pred, y_prob,
                             sensitive_test_data, f'FairConstraint ({constraint.replace("_", " ").title()})')
     return result, fair_model
+
 
 def calibrate_group_thresholds(y_true_data, y_prob_data, sensitive_data, target_dir=0.85):
     """
@@ -252,18 +280,22 @@ def calibrate_group_thresholds(y_true_data, y_prob_data, sensitive_data, target_
     rates_at_50 = {}
     for g in groups:
         mask_g = sensitive_data == g
-        rates_at_50[g] = (y_prob_data[mask_g] >= 0.5).mean() # Approval rate at default 0.5 threshold
+        # Approval rate at default 0.5 threshold
+        rates_at_50[g] = (y_prob_data[mask_g] >= 0.5).mean()
 
     # Determine privileged and unprivileged groups based on rates at 0.5 threshold
-    sorted_rates_at_50 = sorted(rates_at_50.items(), key=lambda item: item[1], reverse=True)
+    sorted_rates_at_50 = sorted(
+        rates_at_50.items(), key=lambda item: item[1], reverse=True)
     privileged_group = sorted_rates_at_50[0][0]
     unprivileged_group = sorted_rates_at_50[1][0]
 
     rate_privileged_at_50 = rates_at_50[privileged_group]
     # rate_unprivileged_at_50 = rates_at_50[unprivileged_group] # Not directly used for target calculation
 
-    print(f"Advantaged group: {privileged_group} (approval {rate_privileged_at_50:.1%})")
-    print(f"Disadvantaged group: {unprivileged_group} (approval {rates_at_50[unprivileged_group]:.1%})")
+    print(
+        f"Advantaged group: {privileged_group} (approval {rate_privileged_at_50:.1%})")
+    print(
+        f"Disadvantaged group: {unprivileged_group} (approval {rates_at_50[unprivileged_group]:.1%})")
 
     # 2. Calculate the target approval rate for the disadvantaged group
     # Based on the target DIR and the advantaged group's approval rate at 0.5 threshold
@@ -274,7 +306,8 @@ def calibrate_group_thresholds(y_true_data, y_prob_data, sensitive_data, target_
     # group (at a given threshold) and the target approval rate.
     def objective(threshold):
         mask_disadvantaged = sensitive_data == unprivileged_group
-        approval_rate_disadvantaged = (y_prob_data[mask_disadvantaged] >= threshold).mean()
+        approval_rate_disadvantaged = (
+            y_prob_data[mask_disadvantaged] >= threshold).mean()
         return abs(approval_rate_disadvantaged - target_rate_unprivileged)
 
     # 4. Search for the optimal threshold for the disadvantaged group
@@ -283,15 +316,17 @@ def calibrate_group_thresholds(y_true_data, y_prob_data, sensitive_data, target_
 
     # Store group-specific thresholds
     thresholds = {
-        privileged_group: 0.5, # Keep privileged group's threshold fixed
-        unprivileged_group: round(result.x, 3) # Optimized threshold for disadvantaged group
+        privileged_group: 0.5,  # Keep privileged group's threshold fixed
+        # Optimized threshold for disadvantaged group
+        unprivileged_group: round(result.x, 3)
     }
 
     # 5. Apply group-specific thresholds
     y_pred_calibrated = np.zeros(len(y_prob_data), dtype=int)
     for g in groups:
         mask_g = sensitive_data == g
-        y_pred_calibrated[mask_g] = (y_prob_data[mask_g] >= thresholds[g]).astype(int)
+        y_pred_calibrated[mask_g] = (
+            y_prob_data[mask_g] >= thresholds[g]).astype(int)
 
     # 6. Verify new approval rates and DIR
     new_rates = {}
@@ -299,7 +334,8 @@ def calibrate_group_thresholds(y_true_data, y_prob_data, sensitive_data, target_
         mask_g = sensitive_data == g
         new_rates[g] = y_pred_calibrated[mask_g].mean()
 
-    new_dir = (new_rates[unprivileged_group] + 1e-6) / (new_rates[privileged_group] + 1e-6)
+    new_dir = (new_rates[unprivileged_group] + 1e-6) / \
+        (new_rates[privileged_group] + 1e-6)
 
     print(f"\nCalibrated thresholds: {thresholds}")
     print(f"New approval rates: {new_rates}")
@@ -308,20 +344,24 @@ def calibrate_group_thresholds(y_true_data, y_prob_data, sensitive_data, target_
     # Evaluate the model with calibrated predictions
     calibrated_results = evaluate_model(y_true_data, y_pred_calibrated, y_prob_data,
                                         sensitive_data, 'Threshold Calibrated')
-    calibrated_results['thresholds'] = thresholds # Add thresholds to results for display
+    # Add thresholds to results for display
+    calibrated_results['thresholds'] = thresholds
     return calibrated_results
+
 
 def print_evaluation_summary(results_dict):
     """Prints a formatted summary of a model's evaluation results."""
     print(f"--- {results_dict['label']} Model Evaluation ---")
     print(f"AUC: {results_dict['auc']}, F1: {results_dict['f1']}")
-    print(f"DIR: {results_dict['dir']} (Four-fifths Rule: {results_dict['four_fifths']})")
+    print(
+        f"DIR: {results_dict['dir']} (Four-fifths Rule: {results_dict['four_fifths']})")
     print(f"SPD: {results_dict['spd']}")
     print(f"EOD (FNR Gap): {results_dict['eod']}")
     print(f"Approval Rates: {results_dict['approval_rates']}")
     if 'thresholds' in results_dict:
         print(f"Calibrated Thresholds: {results_dict['thresholds']}")
     print("\n")
+
 
 def print_comparison_table(all_results_df):
     """Prints a comparison table of all mitigation strategies."""
@@ -334,24 +374,31 @@ def print_comparison_table(all_results_df):
         print(f"{row['label']:<25s} {row['auc']:>7.4f} {row['f1']:>7.4f} {row['dir']:>7.3f} {row['spd']:>7.4f} {row['eod']:>7.4f} {row['four_fifths']:>6s}")
     print("\n")
 
+
 def print_accuracy_cost_table(all_results_df):
     """Prints the accuracy cost of each mitigation strategy compared to baseline."""
     print("--- ACCURACY COST OF EACH MITIGATION ---")
-    baseline_auc = all_results_df[all_results_df['label'] == 'Baseline (Biased)']['auc'].iloc[0]
-    baseline_dir = all_results_df[all_results_df['label'] == 'Baseline (Biased)']['dir'].iloc[0]
+    baseline_auc = all_results_df[all_results_df['label']
+                                  == 'Baseline (Biased)']['auc'].iloc[0]
+    baseline_dir = all_results_df[all_results_df['label']
+                                  == 'Baseline (Biased)']['dir'].iloc[0]
 
     for _, row in all_results_df.iterrows():
         if row['label'] != 'Baseline (Biased)':
             auc_cost = baseline_auc - row['auc']
             dir_gain = row['dir'] - baseline_dir
-            print(f"{row['label']:<25s}: AUC cost={auc_cost:+.4f}, DIR gain={dir_gain:+.3f}")
+            print(
+                f"{row['label']:<25s}: AUC cost={auc_cost:+.4f}, DIR gain={dir_gain:+.3f}")
     print("\n")
+
 
 def plot_accuracy_fairness_frontier(all_results_df):
     """Plots the Accuracy-Fairness Pareto Frontier (AUC vs. DIR)."""
     plt.figure(figsize=(10, 6))
-    sns.scatterplot(x='dir', y='auc', hue='label', data=all_results_df, s=150, style='label')
-    plt.axvline(x=0.80, color='r', linestyle='--', label='Four-fifths Rule (0.80 DIR)')
+    sns.scatterplot(x='dir', y='auc', hue='label',
+                    data=all_results_df, s=150, style='label')
+    plt.axvline(x=0.80, color='r', linestyle='--',
+                label='Four-fifths Rule (0.80 DIR)')
     plt.title('Accuracy-Fairness Pareto Frontier (AUC vs. DIR)')
     plt.xlabel('Disparate Impact Ratio (DIR)')
     plt.ylabel('Area Under ROC Curve (AUC)')
@@ -364,6 +411,7 @@ def plot_accuracy_fairness_frontier(all_results_df):
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+
 
 def plot_approval_rates(all_results_df):
     """Plots approval rates for privileged and unprivileged groups across strategies."""
@@ -378,13 +426,17 @@ def plot_approval_rates(all_results_df):
     plot_data = []
     for _, row in all_results_df.iterrows():
         rates = row['approval_rates']
-        plot_data.append({'Strategy': row['label'], 'Group': privileged_group, 'Approval Rate': rates.get(privileged_group, 0)})
-        plot_data.append({'Strategy': row['label'], 'Group': unprivileged_group, 'Approval Rate': rates.get(unprivileged_group, 0)})
+        plot_data.append({'Strategy': row['label'], 'Group': privileged_group,
+                         'Approval Rate': rates.get(privileged_group, 0)})
+        plot_data.append({'Strategy': row['label'], 'Group': unprivileged_group,
+                         'Approval Rate': rates.get(unprivileged_group, 0)})
     df_plot = pd.DataFrame(plot_data)
 
     plt.figure(figsize=(12, 7))
-    sns.barplot(x='Strategy', y='Approval Rate', hue='Group', data=df_plot, palette='viridis')
-    plt.title(f'Approval Rates by Strategy for {privileged_group} and {unprivileged_group}')
+    sns.barplot(x='Strategy', y='Approval Rate',
+                hue='Group', data=df_plot, palette='viridis')
+    plt.title(
+        f'Approval Rates by Strategy for {privileged_group} and {unprivileged_group}')
     plt.ylabel('Approval Rate')
     plt.xlabel('Mitigation Strategy')
     plt.xticks(rotation=45, ha='right')
@@ -393,18 +445,21 @@ def plot_approval_rates(all_results_df):
     plt.tight_layout()
     plt.show()
 
+
 def plot_auc_cost(all_results_df):
     """Plots the AUC reduction (cost) for each mitigation strategy."""
     if all_results_df.empty or 'Baseline (Biased)' not in all_results_df['label'].values:
         print("No baseline results or dataframe is empty to plot AUC cost.")
         return
 
-    baseline_auc = all_results_df[all_results_df['label'] == 'Baseline (Biased)']['auc'].iloc[0]
+    baseline_auc = all_results_df[all_results_df['label']
+                                  == 'Baseline (Biased)']['auc'].iloc[0]
 
     auc_cost_data = []
     for _, row in all_results_df.iterrows():
         if row['label'] != 'Baseline (Biased)':
-            auc_cost_data.append({'Strategy': row['label'], 'AUC Cost': baseline_auc - row['auc']})
+            auc_cost_data.append(
+                {'Strategy': row['label'], 'AUC Cost': baseline_auc - row['auc']})
 
     df_auc_cost = pd.DataFrame(auc_cost_data)
 
@@ -417,6 +472,7 @@ def plot_auc_cost(all_results_df):
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.tight_layout()
     plt.show()
+
 
 def run_mitigation_strategies(X_train, X_test, y_train, y_test, sensitive_train, sensitive_test, feature_cols,
                               random_state=42, target_dir_threshold_calibration=0.85):
@@ -441,7 +497,8 @@ def run_mitigation_strategies(X_train, X_test, y_train, y_test, sensitive_train,
     print_evaluation_summary(reweighted_results)
 
     print("--- Running Proxy Feature Removal Strategy ---")
-    proxy_features = ['revolving_utilization', 'home_ownership_encoded'] # Defined based on data generation logic
+    # Defined based on data generation logic
+    proxy_features = ['revolving_utilization', 'home_ownership_encoded']
     proxy_removed_results, proxy_removed_model = retrain_without_proxies(
         X_train, y_train, X_test, y_test, proxy_features, sensitive_test, feature_cols, random_state
     )
@@ -492,11 +549,15 @@ def main(n_samples=10000, random_state=42, target_dir_threshold_calibration=0.85
     print("Initializing credit scoring bias mitigation pipeline...\n")
 
     print("Generating biased credit data...")
-    X_train, X_test, y_train, y_test, sensitive_train, sensitive_test, feature_cols = generate_biased_credit_data(n_samples, random_state)
-    print(f"Dataset generated with {len(X_train)} training samples and {len(X_test)} test samples.")
+    X_train, X_test, y_train, y_test, sensitive_train, sensitive_test, feature_cols = generate_biased_credit_data(
+        n_samples, random_state)
+    print(
+        f"Dataset generated with {len(X_train)} training samples and {len(X_test)} test samples.")
     print(f"Features: {feature_cols}")
-    print(f"Sensitive attribute distribution in training: \n{sensitive_train.value_counts(normalize=True)}")
-    print(f"Sensitive attribute distribution in test: \n{sensitive_test.value_counts(normalize=True)}\n")
+    print(
+        f"Sensitive attribute distribution in training: \n{sensitive_train.value_counts(normalize=True)}")
+    print(
+        f"Sensitive attribute distribution in test: \n{sensitive_test.value_counts(normalize=True)}\n")
 
     print("Executing mitigation strategies and evaluations...")
     all_results_df = run_mitigation_strategies(
@@ -515,6 +576,7 @@ def main(n_samples=10000, random_state=42, target_dir_threshold_calibration=0.85
 
     print("Pipeline execution complete.")
     return all_results_df
+
 
 if __name__ == "__main__":
     results_df = main()
